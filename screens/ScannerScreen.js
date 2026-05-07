@@ -143,7 +143,7 @@ export default function ScannerScreen() {
           disabled={!cardId.trim() || processing}
           activeOpacity={0.85}
         >
-          <Text style={styles.submitBtnText}>{processing ? 'Processing…' : 'Submit Decoded Text'}</Text>
+          <Text style={styles.submitBtnText}>{processing ? 'Processing…' : 'Re-submit ID'}</Text>
         </TouchableOpacity>
         {!scanned && !processing && (
           <View style={styles.hintWrap}>

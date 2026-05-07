@@ -10,40 +10,16 @@ import { useAuth } from '../context/AuthContext';
 import { getStudentProfile, topUpWallet } from '../api/gocampus';
 import { formatCurrency } from '../utils/formatters';
 
-const PRESET_AMOUNTS  = [50, 100, 200, 500];
+const PRESET_AMOUNTS = [50, 100, 200, 500];
 
 function extractRedirectUrl(payload) {
   if (!payload) {
     return null;
   }
 
-  if (typeof payload === 'string') {
-    return /^https?:\/\//i.test(payload) ? payload : null;
-  }
-
-  if (Array.isArray(payload)) {
-    for (const item of payload) {
-      const nestedUrl = extractRedirectUrl(item);
-      if (nestedUrl) {
-        return nestedUrl;
-      }
-    }
-    return null;
-  }
-
-  if (typeof payload === 'object') {
-    for (const key of ['url', 'payment_url', 'redirect_url', 'checkout_url', 'gateway_url', 'link']) {
-      const value = payload[key];
-      if (typeof value === 'string' && /^https?:\/\//i.test(value)) {
-        return value;
-      }
-    }
-
-    for (const value of Object.values(payload)) {
-      const nestedUrl = extractRedirectUrl(value);
-      if (nestedUrl) {
-        return nestedUrl;
-      }
+  if (payload?.payment_response) {
+    if (payload.payment_response?.GatewayPageURL) {
+      return payload.payment_response.GatewayPageURL;
     }
   }
 
@@ -52,7 +28,7 @@ function extractRedirectUrl(payload) {
 
 function TopUpSheet({ visible, onClose, onConfirm }) {
   const [selected, setSelected] = useState(100);
-  const [custom, setCustom]     = useState('100');
+  const [custom, setCustom] = useState('100');
 
   const handleSelect = (amt) => { setSelected(amt); setCustom(String(amt)); };
 
