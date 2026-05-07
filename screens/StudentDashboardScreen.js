@@ -1,52 +1,107 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
-  View, Text, TouchableOpacity,
-  StyleSheet, SafeAreaView, ScrollView,
+  View, Text, TouchableOpacity, ActivityIndicator,
+  StyleSheet, SafeAreaView, ScrollView, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-const STATS = [
-  { id: 'wallet',  iconName: 'wallet',     iconBg: '#EEF2FF', iconColor: '#3B82F6', value: '৳485.50', label: 'Wallet Balance' },
-  { id: 'rides',   iconName: 'navigate',   iconBg: '#DCFCE7', iconColor: '#22C55E', value: '34',      label: 'Total Rides' },
-  { id: 'fare',    iconName: 'pricetag',   iconBg: '#FFF7ED', iconColor: '#F59E0B', value: '৳15.00', label: 'Last Ride Fare' },
-];
+import { useFocusEffect } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
+import { getStudentProfile, getStudentStats } from '../api/gocampus';
+import { formatCurrency, getInitials } from '../utils/formatters';
 
 const ACTIONS = [
   { id: 'map',     label: 'View Campus Map', iconName: 'map',       iconBg: '#EEF2FF', iconColor: '#3B82F6', tab: 'SMap' },
   { id: 'wallet',  label: 'Top Up Wallet',   iconName: 'wallet',    iconBg: '#DCFCE7', iconColor: '#22C55E', tab: 'Wallet' },
-  { id: 'history', label: 'Ride History',    iconName: 'time',      iconBg: '#FFF7ED', iconColor: '#F59E0B', tab: 'Wallet' },
+  { id: 'history', label: 'Ride History',    iconName: 'time',      iconBg: '#FFF7ED', iconColor: '#F59E0B', tab: 'StudentHistory' },
 ];
 
 export default function StudentDashboardScreen({ navigation }) {
+  const { session } = useAuth();
+  const [profile, setProfile] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      async function loadDashboard() {
+        if (!session?.accessToken) {
+          return;
+        }
+
+        setLoading(true);
+
+        try {
+          const [profileData, statsData] = await Promise.all([
+            getStudentProfile(session.accessToken),
+            getStudentStats(session.accessToken),
+          ]);
+
+          if (!active) {
+            return;
+          }
+
+          setProfile(profileData);
+          setStats(statsData);
+        } catch (error) {
+          if (active) {
+            Alert.alert('Unable to Load Dashboard', error.message || 'Please try again.');
+          }
+        } finally {
+          if (active) {
+            setLoading(false);
+          }
+        }
+      }
+
+      loadDashboard();
+
+      return () => {
+        active = false;
+      };
+    }, [session?.accessToken])
+  );
+
+  const cards = [
+    { id: 'wallet', iconName: 'wallet', iconBg: '#EEF2FF', iconColor: '#3B82F6', value: formatCurrency(stats?.balance), label: 'Wallet Balance' },
+    { id: 'rides', iconName: 'navigate', iconBg: '#DCFCE7', iconColor: '#22C55E', value: String(stats?.total_rides ?? 0), label: 'Total Rides' },
+    { id: 'fare', iconName: 'pricetag', iconBg: '#FFF7ED', iconColor: '#F59E0B', value: formatCurrency(stats?.last_ride_fare), label: 'Last Ride Fare' },
+  ];
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
         <View style={styles.header}>
           <View>
             <Text style={styles.headerGreet}>Hello,</Text>
-            <Text style={styles.headerName}>Alex</Text>
+            <Text style={styles.headerName}>{profile?.student_name || 'Student'}</Text>
           </View>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>AJ</Text>
+            <Text style={styles.avatarText}>{getInitials(profile?.student_name, 'ST')}</Text>
           </View>
         </View>
 
-        {/* Stats */}
         <Text style={styles.sectionTitle}>Your Stats</Text>
-        <View style={styles.statsGrid}>
-          {STATS.map((s) => (
-            <View key={s.id} style={[styles.statCard, s.id === 'fare' && styles.statCardHalf]}>
-              <View style={[styles.statIconBox, { backgroundColor: s.iconBg }]}>
-                <Ionicons name={s.iconName} size={20} color={s.iconColor} />
+        {loading ? (
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="small" color="#3B82F6" />
+            <Text style={styles.loadingText}>Loading your account data…</Text>
+          </View>
+        ) : (
+          <View style={styles.statsGrid}>
+            {cards.map((s) => (
+              <View key={s.id} style={[styles.statCard, s.id === 'fare' && styles.statCardHalf]}>
+                <View style={[styles.statIconBox, { backgroundColor: s.iconBg }]}>
+                  <Ionicons name={s.iconName} size={20} color={s.iconColor} />
+                </View>
+                <Text style={styles.statValue}>{s.value}</Text>
+                <Text style={styles.statLabel}>{s.label}</Text>
               </View>
-              <Text style={styles.statValue}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
 
-        {/* Quick Actions */}
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionsCard}>
           {ACTIONS.map((a, i) => (
@@ -92,6 +147,15 @@ const styles = StyleSheet.create({
     fontSize: 18, fontWeight: '800', color: '#0F172A',
     paddingHorizontal: 24, marginBottom: 14, letterSpacing: -0.3,
   },
+  loadingCard: {
+    backgroundColor: '#FFF',
+    marginHorizontal: 24,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  loadingText: { marginTop: 12, fontSize: 14, color: '#64748B' },
 
   statsGrid: {
     flexDirection: 'row', flexWrap: 'wrap',

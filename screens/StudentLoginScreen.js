@@ -5,23 +5,41 @@ import {
   Platform, Alert,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
 
 export default function StudentLoginScreen({ navigation }) {
+  const { signIn, signOut } = useAuth();
   const [studentId, setStudentId] = useState('');
   const [password, setPassword]   = useState('');
   const [showPw, setShowPw]       = useState(false);
   const [loading, setLoading]     = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!studentId.trim() || !password.trim()) {
       Alert.alert('Missing Fields', 'Please enter your Student ID and password.');
       return;
     }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      const session = await signIn({
+        id: studentId.trim(),
+        password: password.trim(),
+      });
+
+      if (session.role !== 'STUDENT') {
+        await signOut();
+        Alert.alert('Access Denied', 'These credentials do not belong to a student account.');
+        return;
+      }
+
       navigation.replace('StudentMain');
-    }, 900);
+    } catch (error) {
+      Alert.alert('Login Failed', error.message || 'Unable to sign in right now.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -75,6 +93,7 @@ export default function StudentLoginScreen({ navigation }) {
         <TouchableOpacity
           style={[styles.loginBtn, loading && { opacity: 0.7 }]}
           onPress={handleLogin}
+          disabled={loading}
           activeOpacity={0.85}
         >
           <Text style={styles.loginBtnText}>{loading ? 'Signing in…' : 'Login'}</Text>

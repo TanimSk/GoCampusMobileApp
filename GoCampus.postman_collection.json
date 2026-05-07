@@ -1,0 +1,816 @@
+{
+  "info": {
+    "_postman_id": "b89016ee-144c-4e68-9e9c-1d214b862ba3",
+    "name": "GoCampus",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "52878025",
+    "_collection_link": "https://go.postman.co/collection/52878025-b89016ee-144c-4e68-9e9c-1d214b862ba3?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "authentication",
+      "item": [
+        {
+          "name": "forgot password",
+          "item": [
+            {
+              "name": "submit email",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{    \n    \"email_reg\": \"sktanim5800@gmail.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}rest-auth/password/reset/",
+                  "host": [
+                    "{{base_url}}rest-auth"
+                  ],
+                  "path": [
+                    "password",
+                    "reset",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "reset password",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"new_password1\": \"\",\n    \"new_password2\": \"\",\n    \"uid\": \"\",\n    \"token\": \"\"\n}\n\n// get this uid, token from email : url/<uid>/<token>",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/rest-auth/password/reset/confirm/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "rest-auth",
+                    "password",
+                    "reset",
+                    "confirm",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "get access token",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refresh\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTcyNTEwNzk2NiwiaWF0IjoxNzIyNTE1OTY2LCJqdGkiOiI5ODRiNDU5OWY0YmY0YjUwOTk0Mzg2MDUzYzQ4ZGE0MCIsInVzZXJfaWQiOjIxfQ.4vDmyvc9IGjJuGI3cABYGDPmyIVqntB__y_T8Bc4-A4\"\n}\n// admin\n// tanimsk5800@gmail.com\n// user \n// ongshaktech@gmail.com\n// anonymous\n// anonymous@weardhk.com\n// wearDHK@#4anonymous",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/get-access-token/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "get-access-token",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "password change",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"new_password1\": \"123456\",\n    \"new_password2\": \"123456\",\n    \"old_password\": \"your_new_password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest-auth/password/change/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest-auth",
+                "password",
+                "change",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "if (response.role == \"ADMIN\")",
+                  "    // Store access token as a collection variable",
+                  "    pm.collectionVariables.set(\"accessTokenAdmin\", `${response.access}`);",
+                  "",
+                  "if (response.role == \"STUDENT\")",
+                  "    // Store access token as a collection variable",
+                  "    pm.collectionVariables.set(\"accessTokenStudent\", `${response.access}`);",
+                  "",
+                  "",
+                  "if (response.role == \"ECART\")",
+                  "    // Store access token as a collection variable",
+                  "    pm.collectionVariables.set(\"accessTokenEcart\", `${response.access}`);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"id\": \"2310876102\",\n    \"password\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}rest-auth/login/",
+              "host": [
+                "{{base_url}}rest-auth"
+              ],
+              "path": [
+                "login",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}rest-auth/logout/",
+              "host": [
+                "{{base_url}}rest-auth"
+              ],
+              "path": [
+                "logout",
+                ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ECart",
+      "item": [
+        {
+          "name": "Student Ops",
+          "item": [
+            {
+              "name": "Scan ID card",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessTokenEcart}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"card_id\": \"2310876102\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/ecart/student-ops/?action=scan-id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "ecart",
+                    "student-ops",
+                    ""
+                  ],
+                  "query": [
+                    {
+                      "key": "action",
+                      "value": "scan-id"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Ecart profile",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenEcart}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}ecart/profile/?view=profile",
+              "host": [
+                "{{base_url}}ecart"
+              ],
+              "path": [
+                "profile",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "view",
+                  "value": "profile"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ecart view stats",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenEcart}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}ecart/profile/?view=stats",
+              "host": [
+                "{{base_url}}ecart"
+              ],
+              "path": [
+                "profile",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "view",
+                  "value": "stats"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ride history",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenEcart}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}ecart/ride-history/",
+              "host": [
+                "{{base_url}}ecart"
+              ],
+              "path": [
+                "ride-history",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Earnings",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenEcart}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}ecart/earnings/",
+              "host": [
+                "{{base_url}}ecart"
+              ],
+              "path": [
+                "earnings",
+                ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Student",
+      "item": [
+        {
+          "name": "payments",
+          "item": [
+            {
+              "name": "top-up",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessTokenStudent}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"amount\": 12\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/student/payments/?action=top-up",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "student",
+                    "payments",
+                    ""
+                  ],
+                  "query": [
+                    {
+                      "key": "action",
+                      "value": "top-up"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "invoices",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessTokenStudent}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"student_id_card_url\": \"https://transfer.raphysicsedu.com//uploads/raphysics/f6022892-393a-4bf5-8efb-411c0d1386d2_varsity-id-card.png\",\n    \"password1\": \"123456\",\n    \"password2\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/student/payments/?view=invoices",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "student",
+                    "payments",
+                    ""
+                  ],
+                  "query": [
+                    {
+                      "key": "view",
+                      "value": "invoices"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Registration",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"student_id_card_url\": \"https://transfer.raphysicsedu.com//uploads/raphysics/f6022892-393a-4bf5-8efb-411c0d1386d2_varsity-id-card.png\",\n    \"password1\": \"123456\",\n    \"password2\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}student/registration/",
+              "host": [
+                "{{base_url}}student"
+              ],
+              "path": [
+                "registration",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "profile view",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenStudent}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}student/profile/?view=profile",
+              "host": [
+                "{{base_url}}student"
+              ],
+              "path": [
+                "profile",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "view",
+                  "value": "profile"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "stats view",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenStudent}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}student/profile/?view=stats",
+              "host": [
+                "{{base_url}}student"
+              ],
+              "path": [
+                "profile",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "view",
+                  "value": "stats"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ride history",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessTokenStudent}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}student/ride-history/",
+              "host": [
+                "{{base_url}}student"
+              ],
+              "path": [
+                "ride-history",
+                ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Upload a file",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "uuid": "70007e54-6c13-47a2-9beb-26c5345234da",
+              "src": "/Users/ghost/Documents/docs/varsity-id-card.png"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}administrator/upload/",
+          "host": [
+            "{{base_url}}administrator"
+          ],
+          "path": [
+            "upload",
+            ""
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ3NjcwMTE2LCJpYXQiOjE3NDYzNzQxMTYsImp0aSI6IjA2MWVjZTY0MWIwMDQ2OTM4YTZiMzQzZDBhZWM1OTRkIiwidXNlcl9pZCI6MX0.qFQfVm_mzuzHFe_Qx7iQQTXUva5ua0_SFxQhvX2KBpU",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/",
+      "disabled": true
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "accessTokenAdmin",
+      "value": ""
+    },
+    {
+      "key": "accessTokenStudent",
+      "value": ""
+    },
+    {
+      "key": "base_url",
+      "value": "https://api.ra-physics.space/",
+      "disabled": true
+    },
+    {
+      "key": "accessTokenEcart",
+      "value": ""
+    },
+    {
+      "key": "base_url",
+      "value": ""
+    }
+  ]
+}

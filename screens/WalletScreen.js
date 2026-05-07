@@ -1,25 +1,65 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   SafeAreaView, ScrollView, Modal, TextInput,
-  KeyboardAvoidingView, Platform, Alert,
+  KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
+import { getStudentProfile, topUpWallet } from '../api/gocampus';
+import { formatCurrency } from '../utils/formatters';
 
 const PRESET_AMOUNTS  = [50, 100, 200, 500];
-const PAYMENT_METHODS = ['bKash', 'Nagad', 'Debit / Credit Card'];
+
+function extractRedirectUrl(payload) {
+  if (!payload) {
+    return null;
+  }
+
+  if (typeof payload === 'string') {
+    return /^https?:\/\//i.test(payload) ? payload : null;
+  }
+
+  if (Array.isArray(payload)) {
+    for (const item of payload) {
+      const nestedUrl = extractRedirectUrl(item);
+      if (nestedUrl) {
+        return nestedUrl;
+      }
+    }
+    return null;
+  }
+
+  if (typeof payload === 'object') {
+    for (const key of ['url', 'payment_url', 'redirect_url', 'checkout_url', 'gateway_url', 'link']) {
+      const value = payload[key];
+      if (typeof value === 'string' && /^https?:\/\//i.test(value)) {
+        return value;
+      }
+    }
+
+    for (const value of Object.values(payload)) {
+      const nestedUrl = extractRedirectUrl(value);
+      if (nestedUrl) {
+        return nestedUrl;
+      }
+    }
+  }
+
+  return null;
+}
 
 function TopUpSheet({ visible, onClose, onConfirm }) {
   const [selected, setSelected] = useState(100);
   const [custom, setCustom]     = useState('100');
-  const [method, setMethod]     = useState('bKash');
 
   const handleSelect = (amt) => { setSelected(amt); setCustom(String(amt)); };
 
   const handleConfirm = () => {
     const amount = parseInt(custom, 10);
     if (!amount || amount < 10) { Alert.alert('Invalid', 'Minimum top-up is ৳10.'); return; }
-    onConfirm(amount, method);
+    onConfirm(amount);
   };
 
   return (
@@ -58,18 +98,9 @@ function TopUpSheet({ visible, onClose, onConfirm }) {
             <Text style={styles.addBtnText}>Add ৳{custom || 0} to Wallet</Text>
           </TouchableOpacity>
 
-          <Text style={styles.payViaLabel}>Pay via:</Text>
-          <View style={styles.payMethodsRow}>
-            {PAYMENT_METHODS.map(m => (
-              <TouchableOpacity
-                key={m}
-                style={[styles.payMethodBtn, method === m && styles.payMethodActive]}
-                onPress={() => setMethod(m)}
-              >
-                <Text style={[styles.payMethodText, method === m && styles.payMethodTextActive]}>{m}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <Text style={styles.redirectHint}>
+            The app will request a payment session, then open the returned payment URL in your browser.
+          </Text>
           <View style={{ height: 20 }} />
         </View>
       </KeyboardAvoidingView>
@@ -78,15 +109,53 @@ function TopUpSheet({ visible, onClose, onConfirm }) {
 }
 
 export default function WalletScreen() {
-  const [balance, setBalance]   = useState(485.50);
+  const { session } = useAuth();
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [toppingUp, setToppingUp] = useState(false);
   const [showSheet, setShowSheet] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      async function loadWallet() {
+        if (!session?.accessToken) {
+          return;
+        }
+
+        setLoading(true);
+
+        try {
+          const profileData = await getStudentProfile(session.accessToken);
+
+          if (active) {
+            setProfile(profileData);
+          }
+        } catch (error) {
+          if (active) {
+            Alert.alert('Unable to Load Wallet', error.message || 'Please try again.');
+          }
+        } finally {
+          if (active) {
+            setLoading(false);
+          }
+        }
+      }
+
+      loadWallet();
+
+      return () => {
+        active = false;
+      };
+    }, [session?.accessToken])
+  );
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <Text style={styles.pageTitle}>Wallet</Text>
 
-        {/* Balance Card */}
         <View style={styles.balanceCard}>
           <View style={styles.balanceCardHeader}>
             <View style={styles.cardIconBox}>
@@ -94,19 +163,22 @@ export default function WalletScreen() {
             </View>
             <Text style={styles.balanceLabel}>Available Balance</Text>
           </View>
-          <Text style={styles.balanceAmount}>৳{balance.toFixed(2)}</Text>
+          {loading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.balanceAmount}>{formatCurrency(profile?.balance)}</Text>
+          )}
           <Text style={styles.balanceSub}>GoCampus Wallet · Student Account</Text>
-          <TouchableOpacity style={styles.topUpBtn} onPress={() => setShowSheet(true)} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.topUpBtn} onPress={() => setShowSheet(true)} activeOpacity={0.85} disabled={toppingUp}>
             <Ionicons name="add" size={18} color="#3B82F6" />
             <Text style={styles.topUpBtnText}>Top Up Wallet</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Security note */}
         <View style={styles.securityBox}>
           <Ionicons name="shield-checkmark" size={20} color="#22C55E" />
           <Text style={styles.securityText}>
-            All transactions are secured and encrypted. Your payment info is never stored on device.
+            Wallet balance is loaded from the live API. Top-up requests now redirect you to the gateway page returned by the backend.
           </Text>
         </View>
       </ScrollView>
@@ -114,10 +186,37 @@ export default function WalletScreen() {
       <TopUpSheet
         visible={showSheet}
         onClose={() => setShowSheet(false)}
-        onConfirm={(amount, method) => {
-          setBalance(prev => prev + amount);
-          setShowSheet(false);
-          Alert.alert('Success! 🎉', `৳${amount} added via ${method}.`);
+        onConfirm={async (amount) => {
+          if (!session?.accessToken) {
+            return;
+          }
+
+          setToppingUp(true);
+
+          try {
+            const response = await topUpWallet(session.accessToken, amount);
+            const redirectUrl = extractRedirectUrl(response);
+
+            if (!redirectUrl) {
+              throw new Error('Payment URL was not returned by the server.');
+            }
+
+            setShowSheet(false);
+            const profileData = await getStudentProfile(session.accessToken);
+            setProfile(profileData);
+
+            const supported = await Linking.canOpenURL(redirectUrl);
+            if (!supported) {
+              throw new Error('Unable to open the returned payment URL.');
+            }
+
+            await Linking.openURL(redirectUrl);
+            Alert.alert('Payment Started', response.message || `${formatCurrency(amount)} top-up request created.`);
+          } catch (error) {
+            Alert.alert('Top-up Failed', error.message || 'Unable to submit your top-up request.');
+          } finally {
+            setToppingUp(false);
+          }
         }}
       />
     </SafeAreaView>
@@ -151,6 +250,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
   },
   topUpBtnText: { fontSize: 15, fontWeight: '700', color: '#3B82F6' },
+  redirectHint: { fontSize: 13, color: '#64748B', lineHeight: 19 },
 
   securityBox: {
     flexDirection: 'row', alignItems: 'flex-start',
@@ -194,14 +294,4 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
   },
   addBtnText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-
-  payViaLabel: { fontSize: 13, color: '#64748B', marginBottom: 10 },
-  payMethodsRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
-  payMethodBtn: {
-    paddingVertical: 9, paddingHorizontal: 16, borderRadius: 20,
-    borderWidth: 1.5, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC',
-  },
-  payMethodActive: { borderColor: '#3B82F6', backgroundColor: '#EEF2FF' },
-  payMethodText: { fontSize: 13, fontWeight: '500', color: '#64748B' },
-  payMethodTextActive: { color: '#3B82F6', fontWeight: '700' },
 });

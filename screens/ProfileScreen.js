@@ -1,24 +1,81 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
-  View, Text, TouchableOpacity,
+  View, Text, TouchableOpacity, ActivityIndicator,
   StyleSheet, SafeAreaView, ScrollView, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-const MENU_ITEMS = [
-  { id: 'id',     iconName: 'card',             label: 'My Student ID',     sub: 'STU-2024-001' },
-  { id: 'rides',  iconName: 'bus',              label: 'My Ride History',   sub: '34 total rides' },
-  { id: 'wallet', iconName: 'wallet',           label: 'Wallet & Payments', sub: '৳485.50 balance' },
-  { id: 'notif',  iconName: 'notifications',   label: 'Notifications',     sub: 'Enabled' },
-  { id: 'help',   iconName: 'chatbubble-ellipses', label: 'Help & Support', sub: 'FAQ, contact' },
-  { id: 'about',  iconName: 'information-circle', label: 'About GoCampus', sub: 'v1.0.0' },
-];
+import { useFocusEffect } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
+import { getStudentProfile, getStudentStats } from '../api/gocampus';
+import { formatCurrency, getInitials } from '../utils/formatters';
 
 export default function ProfileScreen({ navigation }) {
+  const { session, signOut } = useAuth();
+  const [profile, setProfile] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      async function loadProfile() {
+        if (!session?.accessToken) {
+          return;
+        }
+
+        setLoading(true);
+
+        try {
+          const [profileData, statsData] = await Promise.all([
+            getStudentProfile(session.accessToken),
+            getStudentStats(session.accessToken),
+          ]);
+
+          if (!active) {
+            return;
+          }
+
+          setProfile(profileData);
+          setStats(statsData);
+        } catch (error) {
+          if (active) {
+            Alert.alert('Unable to Load Profile', error.message || 'Please try again.');
+          }
+        } finally {
+          if (active) {
+            setLoading(false);
+          }
+        }
+      }
+
+      loadProfile();
+
+      return () => {
+        active = false;
+      };
+    }, [session?.accessToken])
+  );
+
+  const menuItems = [
+    { id: 'id', iconName: 'card', label: 'My Student ID', sub: profile?.student_id_num || session?.user?.username || 'Unavailable' },
+    { id: 'rides', iconName: 'bus', label: 'My Ride History', sub: `${stats?.total_rides ?? 0} total rides` },
+    { id: 'wallet', iconName: 'wallet', label: 'Wallet & Payments', sub: `${formatCurrency(stats?.balance)} balance` },
+    { id: 'verified', iconName: 'checkmark-circle', label: 'Account Status', sub: 'Verified Student' },
+    { id: 'about', iconName: 'information-circle', label: 'About GoCampus', sub: 'Live API connected' },
+  ];
+
   const handleLogout = () => {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', style: 'destructive', onPress: () => navigation.replace('StudentLogin') },
+      {
+        text: 'Log Out',
+        style: 'destructive',
+        onPress: async () => {
+          await signOut();
+          navigation.replace('StudentLogin');
+        },
+      },
     ]);
   };
 
@@ -29,10 +86,16 @@ export default function ProfileScreen({ navigation }) {
 
         <View style={styles.profileCard}>
           <View style={styles.bigAvatar}>
-            <Text style={styles.bigAvatarText}>AJ</Text>
+            <Text style={styles.bigAvatarText}>{getInitials(profile?.student_name, 'ST')}</Text>
           </View>
-          <Text style={styles.profileName}>Alex Johnson</Text>
-          <Text style={styles.profileId}>STU-2024-001</Text>
+          {loading ? (
+            <ActivityIndicator size="small" color="#3B82F6" />
+          ) : (
+            <>
+              <Text style={styles.profileName}>{profile?.student_name || 'Student'}</Text>
+              <Text style={styles.profileId}>{profile?.student_id_num || session?.user?.username}</Text>
+            </>
+          )}
           <View style={styles.verifiedBadge}>
             <Ionicons name="checkmark-circle" size={14} color="#166534" />
             <Text style={styles.verifiedText}> Verified Student</Text>
@@ -40,7 +103,7 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
         <View style={styles.menuCard}>
-          {MENU_ITEMS.map((item, i) => (
+          {menuItems.map((item, i) => (
             <React.Fragment key={item.id}>
               <TouchableOpacity style={styles.menuRow} activeOpacity={0.7}>
                 <View style={styles.menuIconBox}>
@@ -52,7 +115,7 @@ export default function ProfileScreen({ navigation }) {
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
               </TouchableOpacity>
-              {i < MENU_ITEMS.length - 1 && <View style={styles.divider} />}
+              {i <menuItems.length - 1 && <View style={styles.divider} />}
             </React.Fragment>
           ))}
         </View>

@@ -1,29 +1,64 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View, Text, ScrollView,
-  StyleSheet, SafeAreaView,
+  StyleSheet, SafeAreaView, ActivityIndicator, Alert,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-
-const TODAY_RIDES = [
-  { id: 'STU-001', time: '9:15 AM',  date: 'Mar 15, 2026', amount: 15 },
-  { id: 'STU-034', time: '10:00 AM', date: 'Mar 15, 2026', amount: 10 },
-  { id: 'STU-012', time: '11:30 AM', date: 'Mar 15, 2026', amount: 20 },
-  { id: 'STU-087', time: '1:15 PM',  date: 'Mar 15, 2026', amount: 12 },
-  { id: 'STU-023', time: '2:45 PM',  date: 'Mar 15, 2026', amount: 18 },
-  { id: 'STU-056', time: '4:00 PM',  date: 'Mar 15, 2026', amount: 15 },
-];
-
-const todayTotal = TODAY_RIDES.reduce((s, r) => s + r.amount, 0);
-const avgPerTrip = Math.round(todayTotal / TODAY_RIDES.length);
+import { useAuth } from '../context/AuthContext';
+import { getDriverEarnings } from '../api/gocampus';
+import { formatCurrency, formatDateTime } from '../utils/formatters';
 
 export default function EarningsScreen() {
+  const { session } = useAuth();
+  const [earnings, setEarnings] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      async function loadEarnings() {
+        if (!session?.accessToken) {
+          return;
+        }
+
+        setLoading(true);
+
+        try {
+          const payload = await getDriverEarnings(session.accessToken);
+
+          if (active) {
+            setEarnings(payload);
+          }
+        } catch (error) {
+          if (active) {
+            Alert.alert('Unable to Load Earnings', error.message || 'Please try again.');
+          }
+        } finally {
+          if (active) {
+            setLoading(false);
+          }
+        }
+      }
+
+      loadEarnings();
+
+      return () => {
+        active = false;
+      };
+    }, [session?.accessToken])
+  );
+
+  const rides = earnings?.todays_rides || [];
+  const todayTotal = Number(earnings?.todays_earnings || 0);
+  const avgPerTrip = rides.length ? Math.round(todayTotal / rides.length) : 0;
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <Text style={styles.pageTitle}>Earnings</Text>
 
-        {/* Hero card */}
         <View style={styles.heroCard}>
           <View style={styles.heroTopRow}>
             <View style={styles.heroIconBox}>
@@ -31,11 +66,15 @@ export default function EarningsScreen() {
             </View>
             <Text style={styles.heroLabel}>Today's Total</Text>
           </View>
-          <Text style={styles.heroAmount}>৳{todayTotal}.00</Text>
+          {loading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.heroAmount}>{formatCurrency(todayTotal)}</Text>
+          )}
           <View style={styles.heroMetaRow}>
             <View style={styles.heroMeta}>
               <Ionicons name="navigate-outline" size={13} color="rgba(255,255,255,0.75)" />
-              <Text style={styles.heroMetaText}> {TODAY_RIDES.length} trips</Text>
+              <Text style={styles.heroMetaText}> {earnings?.trips_today ?? 0} trips</Text>
             </View>
             <View style={styles.heroMeta}>
               <Ionicons name="cash-outline" size={13} color="rgba(255,255,255,0.75)" />
@@ -44,38 +83,50 @@ export default function EarningsScreen() {
           </View>
         </View>
 
-        {/* Summary strip */}
         <View style={styles.summaryStrip}>
           <View style={styles.stripItem}>
-            <Text style={styles.stripValue}>৳320</Text>
+            <Text style={styles.stripValue}>{formatCurrency(earnings?.this_week_earnings)}</Text>
             <Text style={styles.stripLabel}>This Week</Text>
           </View>
           <View style={styles.stripDivider} />
           <View style={styles.stripItem}>
-            <Text style={styles.stripValue}>18</Text>
+            <Text style={styles.stripValue}>{earnings?.trips_today ?? 0}</Text>
             <Text style={styles.stripLabel}>Trips Today</Text>
           </View>
           <View style={styles.stripDivider} />
           <View style={styles.stripItem}>
-            <Text style={styles.stripValue}>EC-12</Text>
+            <Text style={styles.stripValue}>{earnings?.cart_id || session?.user?.username || 'N/A'}</Text>
             <Text style={styles.stripLabel}>Cart ID</Text>
           </View>
         </View>
 
         <Text style={styles.sectionTitle}>Today's Rides</Text>
 
-        {TODAY_RIDES.map(ride => (
-          <View key={ride.id} style={styles.rideCard}>
-            <View style={styles.rideAvatarBox}>
-              <Ionicons name="person" size={20} color="#22C55E" />
-            </View>
-            <View style={styles.rideInfo}>
-              <Text style={styles.rideId}>{ride.id}</Text>
-              <Text style={styles.rideTime}>{ride.time} · {ride.date}</Text>
-            </View>
-            <Text style={styles.rideAmount}>৳{ride.amount}.00</Text>
+        {loading ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator size="small" color="#22C55E" />
+            <Text style={styles.loadingText}>Loading earnings…</Text>
           </View>
-        ))}
+        ) : rides.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Ionicons name="cash-outline" size={24} color="#94A3B8" />
+            <Text style={styles.emptyTitle}>No earnings yet today</Text>
+            <Text style={styles.emptyText}>The API returned no completed rides for this driver today.</Text>
+          </View>
+        ) : (
+          rides.map((ride, index) => (
+            <View key={ride.id || `${ride.created_at}-${index}`} style={styles.rideCard}>
+              <View style={styles.rideAvatarBox}>
+                <Ionicons name="person" size={20} color="#22C55E" />
+              </View>
+              <View style={styles.rideInfo}>
+                <Text style={styles.rideId}>{ride.student_id || ride.student_name || 'Student Rider'}</Text>
+                <Text style={styles.rideTime}>{formatDateTime(ride.created_at)}</Text>
+              </View>
+              <Text style={styles.rideAmount}>{formatCurrency(ride.fee)}</Text>
+            </View>
+          ))
+        )}
 
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -124,6 +175,14 @@ const styles = StyleSheet.create({
     fontSize: 18, fontWeight: '800', color: '#0F172A',
     paddingHorizontal: 24, marginBottom: 14, letterSpacing: -0.3,
   },
+  loadingWrap: { alignItems: 'center', paddingVertical: 32 },
+  loadingText: { marginTop: 12, fontSize: 14, color: '#64748B' },
+  emptyCard: {
+    backgroundColor: '#FFF', marginHorizontal: 24, marginBottom: 10,
+    borderRadius: 14, padding: 20, alignItems: 'center',
+  },
+  emptyTitle: { marginTop: 10, fontSize: 16, fontWeight: '700', color: '#0F172A' },
+  emptyText: { marginTop: 6, fontSize: 13, color: '#64748B', textAlign: 'center' },
 
   rideCard: {
     flexDirection: 'row', alignItems: 'center',

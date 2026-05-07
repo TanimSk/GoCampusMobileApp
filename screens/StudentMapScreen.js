@@ -1,39 +1,39 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView,
   ScrollView, Dimensions,
 } from 'react-native';
 import MapView, { Marker, Callout, PROVIDER_GOOGLE } from 'react-native-maps';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
+import useGeolocationSocket from '../hooks/useGeolocationSocket';
+import { getInitials } from '../utils/formatters';
 
 const { width } = Dimensions.get('window');
 
-// Dhaka University campus centre (example campus)
 const CAMPUS_CENTER = { latitude: 23.7279, longitude: 90.3921 };
 
-const CART_LOCATIONS = [
-  { id: 'C01', driver: 'Rahman',   latitude: 23.7295, longitude: 90.3905, from: 'Main Library',  to: 'Cafeteria',  student: 'Sadia Islam',  fare: '৳8.00',  eta: '4 min' },
-  { id: 'C03', driver: 'Hasan',    latitude: 23.7265, longitude: 90.3940, from: 'Eng. Block',    to: 'Admin',      student: 'Rahim Uddin',  fare: '৳12.00', eta: '7 min' },
-  { id: 'C04', driver: 'Nabil',    latitude: 23.7250, longitude: 90.3910, from: 'Dorm A',        to: 'Sports',     student: 'Mitu Akter',   fare: '৳6.00',  eta: '2 min' },
-];
+function formatCoordinate(value) {
+  return Number(value).toFixed(5);
+}
 
-function CartMarker({ cart }) {
+function LiveUserMarker({ entry, isCurrentUser }) {
   return (
     <Marker
-      coordinate={{ latitude: cart.latitude, longitude: cart.longitude }}
+      coordinate={{ latitude: entry.latitude, longitude: entry.longitude }}
       anchor={{ x: 0.5, y: 0.5 }}
     >
       <View style={styles.markerContainer}>
-        <View style={styles.markerBubble}>
-          <Text style={styles.markerLabel}>{cart.id}</Text>
+        <View style={[styles.markerBubble, isCurrentUser && styles.markerBubbleCurrent]}>
+          <Text style={styles.markerLabel}>{isCurrentUser ? 'YOU' : entry.user_id}</Text>
         </View>
-        <View style={styles.markerTail} />
+        <View style={[styles.markerTail, isCurrentUser && styles.markerTailCurrent]} />
       </View>
       <Callout tooltip>
         <View style={styles.callout}>
-          <Text style={styles.calloutDriver}>{cart.driver}</Text>
-          <Text style={styles.calloutRoute}>{cart.from} → {cart.to}</Text>
-          <Text style={styles.calloutEta}>{cart.eta} away</Text>
+          <Text style={styles.calloutDriver}>{isCurrentUser ? 'Your location' : entry.user_id}</Text>
+          <Text style={styles.calloutRoute}>Lat {formatCoordinate(entry.latitude)}</Text>
+          <Text style={styles.calloutEta}>Lng {formatCoordinate(entry.longitude)}</Text>
         </View>
       </Callout>
     </Marker>
@@ -41,30 +41,38 @@ function CartMarker({ cart }) {
 }
 
 export default function StudentMapScreen() {
+  const { session } = useAuth();
   const mapRef = useRef(null);
+  const userId = session?.user?.username || 'student';
+  const { locations, connectionStatus, permissionGranted } = useGeolocationSocket(userId);
+
+  const sortedLocations = useMemo(
+    () => [...locations].sort((a, b) => (a.user_id === userId ? -1 : b.user_id === userId ? 1 : a.user_id.localeCompare(b.user_id))),
+    [locations, userId]
+  );
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <SafeAreaView style={styles.headerSafe}>
         <View style={styles.header}>
           <View>
             <Text style={styles.headerSub}>Campus Map</Text>
             <View style={styles.headerRow}>
-              <Text style={styles.headerTitle}>Active Rides</Text>
+              <Text style={styles.headerTitle}>Live Locations</Text>
               <View style={styles.liveBadge}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveText}>LIVE</Text>
+                <View style={[styles.liveDot, connectionStatus === 'open' ? styles.liveDotOpen : styles.liveDotClosed]} />
+                <Text style={[styles.liveText, connectionStatus !== 'open' && styles.liveTextClosed]}>
+                  {connectionStatus === 'open' ? 'LIVE' : connectionStatus.toUpperCase()}
+                </Text>
               </View>
             </View>
           </View>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>AJ</Text>
+            <Text style={styles.avatarText}>{getInitials(userId, 'ST')}</Text>
           </View>
         </View>
       </SafeAreaView>
 
-      {/* Google Map */}
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
@@ -74,42 +82,61 @@ export default function StudentMapScreen() {
           latitudeDelta: 0.012,
           longitudeDelta: 0.012,
         }}
-        showsUserLocation
-        showsMyLocationButton
+        showsUserLocation={permissionGranted}
+        showsMyLocationButton={permissionGranted}
         mapType="standard"
       >
-        {CART_LOCATIONS.map(cart => (
-          <CartMarker key={cart.id} cart={cart} />
+        {sortedLocations.map((entry) => (
+          <LiveUserMarker key={entry.user_id} entry={entry} isCurrentUser={entry.user_id === userId} />
         ))}
       </MapView>
 
-      {/* Active Rides Bottom Card */}
       <View style={styles.bottomCard}>
         <View style={styles.bottomHandle} />
         <View style={styles.ridesSectionHeader}>
-          <Text style={styles.ridesSectionTitle}>Active Rides</Text>
+          <Text style={styles.ridesSectionTitle}>Socket Feed</Text>
           <View style={styles.ongoingBadge}>
-            <Text style={styles.ongoingText}>{CART_LOCATIONS.length} ongoing</Text>
+            <Text style={styles.ongoingText}>{sortedLocations.length} tracked</Text>
           </View>
         </View>
 
+        <Text style={styles.helperText}>
+          {permissionGranted
+            ? 'Your phone is publishing coordinates and rendering live websocket updates.'
+            : 'Location permission is off. Live websocket updates still render when available.'}
+        </Text>
+
         <ScrollView showsVerticalScrollIndicator={false}>
-          {CART_LOCATIONS.map((ride) => (
-            <View key={ride.id} style={styles.rideRow}>
-              <View style={styles.rideCartBadge}>
-                <Text style={styles.rideCartText}>{ride.id}</Text>
+          {sortedLocations.map((entry) => {
+            const isCurrentUser = entry.user_id === userId;
+
+            return (
+              <View key={entry.user_id} style={styles.rideRow}>
+                <View style={[styles.rideCartBadge, isCurrentUser && styles.rideCartBadgeCurrent]}>
+                  <MaterialCommunityIcons
+                    name={isCurrentUser ? 'crosshairs-gps' : 'map-marker'}
+                    size={18}
+                    color={isCurrentUser ? '#2563EB' : '#F97316'}
+                  />
+                </View>
+                <View style={styles.rideInfo}>
+                  <Text style={styles.rideDriver}>{isCurrentUser ? 'You' : entry.user_id}</Text>
+                  <Text style={styles.rideRoute}>Latitude {formatCoordinate(entry.latitude)}</Text>
+                  <Text style={styles.rideStudent}>Longitude {formatCoordinate(entry.longitude)}</Text>
+                </View>
+                <View style={styles.rideMeta}>
+                  <Text style={styles.rideFare}>{isCurrentUser ? 'Self' : 'Peer'}</Text>
+                  <Text style={styles.rideEta}>{connectionStatus}</Text>
+                </View>
               </View>
-              <View style={styles.rideInfo}>
-                <Text style={styles.rideDriver}>{ride.driver}</Text>
-                <Text style={styles.rideRoute}>{ride.from} → {ride.to}</Text>
-                <Text style={styles.rideStudent}>{ride.student}</Text>
-              </View>
-              <View style={styles.rideMeta}>
-                <Text style={styles.rideFare}>{ride.fare}</Text>
-                <Text style={styles.rideEta}>{ride.eta}</Text>
-              </View>
+            );
+          })}
+          {!sortedLocations.length && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>No live locations yet</Text>
+              <Text style={styles.emptyText}>The websocket has not emitted any user coordinates yet.</Text>
             </View>
-          ))}
+          )}
           <View style={{ height: 12 }} />
         </ScrollView>
       </View>
@@ -119,7 +146,6 @@ export default function StudentMapScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-
   headerSafe: { backgroundColor: '#F8FAFC' },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -133,17 +159,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2', borderRadius: 20,
     paddingHorizontal: 10, paddingVertical: 4,
   },
-  liveDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#EF4444' },
-  liveText: { fontSize: 11, fontWeight: '800', color: '#EF4444', letterSpacing: 0.5 },
+  liveDot: { width: 7, height: 7, borderRadius: 3.5 },
+  liveDotOpen: { backgroundColor: '#10B981' },
+  liveDotClosed: { backgroundColor: '#EF4444' },
+  liveText: { fontSize: 11, fontWeight: '800', color: '#10B981', letterSpacing: 0.5 },
+  liveTextClosed: { color: '#EF4444' },
   avatar: {
     width: 44, height: 44, borderRadius: 22,
     backgroundColor: '#3B82F6', justifyContent: 'center', alignItems: 'center',
   },
   avatarText: { fontSize: 15, fontWeight: '800', color: '#FFF' },
-
   map: { flex: 1 },
-
-  // Cart marker
   markerContainer: { alignItems: 'center' },
   markerBubble: {
     backgroundColor: '#F97316', borderRadius: 20,
@@ -151,6 +177,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25, shadowRadius: 4, elevation: 5,
   },
+  markerBubbleCurrent: { backgroundColor: '#2563EB' },
   markerLabel: { color: '#FFF', fontSize: 12, fontWeight: '800' },
   markerTail: {
     width: 0, height: 0,
@@ -158,6 +185,7 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent', borderRightColor: 'transparent',
     borderTopColor: '#F97316',
   },
+  markerTailCurrent: { borderTopColor: '#2563EB' },
   callout: {
     backgroundColor: '#FFF', borderRadius: 10, padding: 12,
     minWidth: 160, shadowColor: '#000',
@@ -167,13 +195,11 @@ const styles = StyleSheet.create({
   calloutDriver: { fontSize: 13, fontWeight: '800', color: '#0F172A', marginBottom: 2 },
   calloutRoute: { fontSize: 11, color: '#64748B', marginBottom: 4 },
   calloutEta: { fontSize: 11, fontWeight: '600', color: '#22C55E' },
-
-  // Bottom panel
   bottomCard: {
     backgroundColor: '#FFF',
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     paddingTop: 12, paddingHorizontal: 20,
-    maxHeight: 280,
+    maxHeight: 320,
     shadowColor: '#000', shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1, shadowRadius: 12, elevation: 8,
   },
@@ -187,11 +213,11 @@ const styles = StyleSheet.create({
   },
   ridesSectionTitle: { fontSize: 16, fontWeight: '800', color: '#0F172A' },
   ongoingBadge: {
-    backgroundColor: '#FEF2F2', borderRadius: 20,
+    backgroundColor: '#DBEAFE', borderRadius: 20,
     paddingHorizontal: 10, paddingVertical: 4,
   },
-  ongoingText: { fontSize: 12, fontWeight: '700', color: '#EF4444' },
-
+  ongoingText: { fontSize: 12, fontWeight: '700', color: '#2563EB' },
+  helperText: { fontSize: 12, color: '#64748B', lineHeight: 18, marginBottom: 8 },
   rideRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: 12,
@@ -202,7 +228,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF3E2',
     justifyContent: 'center', alignItems: 'center', marginRight: 12,
   },
-  rideCartText: { fontSize: 11, fontWeight: '800', color: '#F97316' },
+  rideCartBadgeCurrent: { backgroundColor: '#DBEAFE' },
   rideInfo: { flex: 1 },
   rideDriver: { fontSize: 14, fontWeight: '800', color: '#0F172A', marginBottom: 2 },
   rideRoute: { fontSize: 12, color: '#64748B', marginBottom: 1 },
@@ -210,4 +236,7 @@ const styles = StyleSheet.create({
   rideMeta: { alignItems: 'flex-end' },
   rideFare: { fontSize: 14, fontWeight: '800', color: '#0F172A', marginBottom: 3 },
   rideEta: { fontSize: 12, color: '#64748B' },
+  emptyState: { paddingVertical: 20, alignItems: 'center' },
+  emptyTitle: { fontSize: 15, fontWeight: '700', color: '#0F172A', marginBottom: 6 },
+  emptyText: { fontSize: 12, color: '#64748B', textAlign: 'center' },
 });

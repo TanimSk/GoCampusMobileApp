@@ -5,23 +5,41 @@ import {
   Platform, Alert,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
 
 export default function DriverLoginScreen({ navigation }) {
+  const { signIn, signOut } = useAuth();
   const [cartId, setCartId]     = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw]     = useState(false);
   const [loading, setLoading]   = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!cartId.trim() || !password.trim()) {
       Alert.alert('Error', 'Please enter your Cart ID and password.');
       return;
     }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      const session = await signIn({
+        id: cartId.trim(),
+        password: password.trim(),
+      });
+
+      if (session.role !== 'ECART') {
+        await signOut();
+        Alert.alert('Access Denied', 'These credentials do not belong to a driver account.');
+        return;
+      }
+
       navigation.replace('DriverMain');
-    }, 900);
+    } catch (error) {
+      Alert.alert('Login Failed', error.message || 'Unable to sign in right now.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -75,6 +93,7 @@ export default function DriverLoginScreen({ navigation }) {
         <TouchableOpacity
           style={[styles.loginBtn, loading && { opacity: 0.7 }]}
           onPress={handleLogin}
+          disabled={loading}
           activeOpacity={0.85}
         >
           <Text style={styles.loginBtnText}>{loading ? 'Signing in…' : 'Login'}</Text>

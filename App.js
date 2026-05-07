@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { AuthProvider } from './context/AuthContext';
 
 // Student screens
 import StudentLoginScreen    from './screens/StudentLoginScreen';
@@ -91,15 +92,18 @@ function DriverTabs() {
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <StatusBar style="dark" />
-      <Root.Navigator screenOptions={{ headerShown: false }}>
-        <Root.Screen name="StudentLogin"  component={StudentLoginScreen} />
-        <Root.Screen name="CreateAccount" component={CreateAccountScreen} />
-        <Root.Screen name="StudentMain"   component={StudentTabs} />
-        <Root.Screen name="DriverLogin"   component={DriverLoginScreen} />
-        <Root.Screen name="DriverMain"    component={DriverTabs} />
-      </Root.Navigator>
-    </NavigationContainer>
+    <AuthProvider>
+      <NavigationContainer>
+        <StatusBar style="dark" />
+        <Root.Navigator screenOptions={{ headerShown: false }}>
+          <Root.Screen name="StudentLogin"  component={StudentLoginScreen} />
+          <Root.Screen name="CreateAccount" component={CreateAccountScreen} />
+          <Root.Screen name="StudentMain"   component={StudentTabs} />
+          <Root.Screen name="StudentHistory" component={HistoryScreen} />
+          <Root.Screen name="DriverLogin"   component={DriverLoginScreen} />
+          <Root.Screen name="DriverMain"    component={DriverTabs} />
+        </Root.Navigator>
+      </NavigationContainer>
+    </AuthProvider>
   );
 }
