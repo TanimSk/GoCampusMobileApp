@@ -1,8 +1,9 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView,
+  View, Text, StyleSheet,
   ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, Callout, PROVIDER_GOOGLE } from 'react-native-maps';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -234,7 +235,7 @@ const styles = StyleSheet.create({
   headerSafe: { backgroundColor: '#F8FAFC' },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 24, paddingTop: 8, paddingBottom: 12,
+    paddingHorizontal: 24, paddingTop: 18, paddingBottom: 12,
   },
   headerSub: { fontSize: 13, color: '#64748B', fontWeight: '500', marginBottom: 2 },
   headerTitle: { fontSize: 22, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5 },

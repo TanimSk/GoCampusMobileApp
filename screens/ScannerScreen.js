@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  Animated, SafeAreaView, Platform, TextInput, Alert, ActivityIndicator,
+  Animated, TextInput, Alert, ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useIsFocused } from '@react-navigation/native';
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
   loaderState: { flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
 
-  headerSafe: { paddingTop: Platform.OS === 'android' ? 44 : 16, paddingHorizontal: 24, paddingBottom: 16, alignItems: 'center' },
+  headerSafe: { paddingTop: 26, paddingHorizontal: 24, paddingBottom: 16, alignItems: 'center' },
   headerTitle: { color: '#FFF', fontSize: 20, fontWeight: '800', letterSpacing: -0.3 },
   headerSub: { color: '#9CA3AF', fontSize: 13, marginTop: 4 },
 

@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import {
   View, Text, TouchableOpacity, ActivityIndicator,
-  StyleSheet, SafeAreaView, ScrollView, Alert,
+  StyleSheet, ScrollView, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -63,8 +64,8 @@ export default function StudentDashboardScreen({ navigation }) {
     }, [session?.accessToken])
   );
 
+  const walletCard = { id: 'wallet', iconName: 'wallet', iconBg: '#EEF2FF', iconColor: '#3B82F6', value: formatCurrency(stats?.balance), label: 'Wallet Balance' };
   const cards = [
-    { id: 'wallet', iconName: 'wallet', iconBg: '#EEF2FF', iconColor: '#3B82F6', value: formatCurrency(stats?.balance), label: 'Wallet Balance' },
     { id: 'rides', iconName: 'navigate', iconBg: '#DCFCE7', iconColor: '#22C55E', value: String(stats?.total_rides ?? 0), label: 'Total Rides' },
     { id: 'fare', iconName: 'pricetag', iconBg: '#FFF7ED', iconColor: '#F59E0B', value: formatCurrency(stats?.last_ride_fare), label: 'Last Ride Fare' },
   ];
@@ -89,17 +90,27 @@ export default function StudentDashboardScreen({ navigation }) {
             <Text style={styles.loadingText}>Loading your account data…</Text>
           </View>
         ) : (
-          <View style={styles.statsGrid}>
-            {cards.map((s) => (
-              <View key={s.id} style={[styles.statCard, s.id === 'fare' && styles.statCardHalf]}>
-                <View style={[styles.statIconBox, { backgroundColor: s.iconBg }]}>
-                  <Ionicons name={s.iconName} size={20} color={s.iconColor} />
-                </View>
-                <Text style={styles.statValue}>{s.value}</Text>
-                <Text style={styles.statLabel}>{s.label}</Text>
+          <>
+            <View style={styles.walletCard}>
+              <View style={[styles.statIconBox, { backgroundColor: walletCard.iconBg }]}>
+                <Ionicons name={walletCard.iconName} size={22} color={walletCard.iconColor} />
               </View>
-            ))}
-          </View>
+              <Text style={styles.walletValue}>{walletCard.value}</Text>
+              <Text style={styles.statLabel}>{walletCard.label}</Text>
+            </View>
+
+            <View style={styles.statsGrid}>
+              {cards.map((s) => (
+                <View key={s.id} style={styles.statCard}>
+                  <View style={[styles.statIconBox, { backgroundColor: s.iconBg }]}>
+                    <Ionicons name={s.iconName} size={20} color={s.iconColor} />
+                  </View>
+                  <Text style={styles.statValue}>{s.value}</Text>
+                  <Text style={styles.statLabel}>{s.label}</Text>
+                </View>
+              ))}
+            </View>
+          </>
         )}
 
         <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -122,7 +133,7 @@ export default function StudentDashboardScreen({ navigation }) {
           ))}
         </View>
 
-        <View style={{ height: 24 }} />
+        <View style={{ height: 34 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -133,7 +144,7 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24,
+    paddingHorizontal: 24, paddingTop: 30, paddingBottom: 24,
   },
   headerGreet: { fontSize: 14, color: '#64748B', fontWeight: '500' },
   headerName: { fontSize: 30, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5 },
@@ -157,17 +168,23 @@ const styles = StyleSheet.create({
   },
   loadingText: { marginTop: 12, fontSize: 14, color: '#64748B' },
 
+  walletCard: {
+    backgroundColor: '#FFF', marginHorizontal: 24, borderRadius: 16, padding: 20,
+    marginBottom: 12,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+  },
+  walletValue: { fontSize: 40, fontWeight: '900', color: '#0F172A', letterSpacing: -1, marginBottom: 4 },
   statsGrid: {
-    flexDirection: 'row', flexWrap: 'wrap',
+    flexDirection: 'row',
     paddingHorizontal: 24, gap: 12, marginBottom: 28,
   },
   statCard: {
-    flex: 1, minWidth: '44%',
+    flex: 1,
     backgroundColor: '#FFF', borderRadius: 16, padding: 18,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
-  statCardHalf: { flex: 0, width: '44%' },
   statIconBox: {
     width: 40, height: 40, borderRadius: 10,
     justifyContent: 'center', alignItems: 'center', marginBottom: 14,

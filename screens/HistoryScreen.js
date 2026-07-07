@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import {
   View, Text, ScrollView, ActivityIndicator,
-  StyleSheet, SafeAreaView, Alert,
+  StyleSheet, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
@@ -166,7 +167,7 @@ export default function HistoryScreen() {
           ))
         )}
 
-        <View style={{ height: 24 }} />
+        <View style={{ height: 34 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -176,7 +177,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F8FAFC' },
   pageTitle: {
     fontSize: 28, fontWeight: '800', color: '#0F172A',
-    paddingHorizontal: 24, paddingTop: 20, paddingBottom: 20, letterSpacing: -0.5,
+    paddingHorizontal: 24, paddingTop: 30, paddingBottom: 20, letterSpacing: -0.5,
   },
   summaryCard: {
     flexDirection: 'row', backgroundColor: '#FFF',

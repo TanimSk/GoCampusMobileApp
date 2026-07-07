@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, SafeAreaView, KeyboardAvoidingView,
+  StyleSheet, KeyboardAvoidingView,
   Platform, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 
@@ -129,7 +130,7 @@ export default function StudentLoginScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F8FAFC' },
-  inner: { flex: 1, paddingHorizontal: 24, paddingTop: 16 },
+  inner: { flex: 1, paddingHorizontal: 24, paddingTop: 26, paddingBottom: 10 },
 
   back: { width: 40, height: 40, justifyContent: 'center' },
 

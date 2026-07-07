@@ -1,8 +1,9 @@
 import React, { useMemo, useRef } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView,
+  View, Text, StyleSheet,
   ScrollView, Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, Callout, PROVIDER_GOOGLE } from 'react-native-maps';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
   headerSafe: { backgroundColor: '#F8FAFC' },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 24, paddingTop: 8, paddingBottom: 12,
+    paddingHorizontal: 24, paddingTop: 18, paddingBottom: 12,
   },
   headerSub: { fontSize: 13, color: '#64748B', fontWeight: '500', marginBottom: 2 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },

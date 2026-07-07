@@ -1,9 +1,10 @@
 import React, { useCallback, useState } from 'react';
 import {
   View, Text, TouchableOpacity,
-  StyleSheet, SafeAreaView, ScrollView, Switch,
+  StyleSheet, ScrollView, Switch,
   ActivityIndicator, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -153,7 +154,7 @@ export default function DriverDashboardScreen({ navigation }) {
           ))}
         </View>
 
-        <View style={{ height: 24 }} />
+        <View style={{ height: 34 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -163,7 +164,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F8FAFC' },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 24, paddingTop: 16, paddingBottom: 20,
+    paddingHorizontal: 24, paddingTop: 26, paddingBottom: 20,
   },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerSub: { fontSize: 13, color: '#64748B', fontWeight: '500' },

@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthProvider } from './context/AuthContext';
 
 // Student screens
@@ -42,7 +43,7 @@ const DRIVER_TABS = [
   { name: 'Earnings',   label: 'Earnings',  icon: 'cash',      component: EarningsScreen },
 ];
 
-function buildTabOptions(accentColor) {
+function buildTabOptions(accentColor, bottomInset) {
   return ({ route }) => {
     const tabDef = [...STUDENT_TABS, ...DRIVER_TABS].find(t => t.name === route.name);
     return {
@@ -53,9 +54,9 @@ function buildTabOptions(accentColor) {
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
-        paddingBottom: 8,
+        paddingBottom: bottomInset + 8,
         paddingTop: 6,
-        height: 68,
+        height: 60 + bottomInset,
       },
       tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
       tabBarLabel: tabDef?.label || route.name,
@@ -71,8 +72,9 @@ function buildTabOptions(accentColor) {
 }
 
 function StudentTabs() {
+  const insets = useSafeAreaInsets();
   return (
-    <StudentTab.Navigator screenOptions={buildTabOptions('#3B82F6')}>
+    <StudentTab.Navigator screenOptions={buildTabOptions('#3B82F6', insets.bottom)}>
       {STUDENT_TABS.map(t => (
         <StudentTab.Screen key={t.name} name={t.name} component={t.component} />
       ))}
@@ -81,8 +83,9 @@ function StudentTabs() {
 }
 
 function DriverTabs() {
+  const insets = useSafeAreaInsets();
   return (
-    <DriverTab.Navigator screenOptions={buildTabOptions('#22C55E')}>
+    <DriverTab.Navigator screenOptions={buildTabOptions('#22C55E', insets.bottom)}>
       {DRIVER_TABS.map(t => (
         <DriverTab.Screen key={t.name} name={t.name} component={t.component} />
       ))}
@@ -92,18 +95,20 @@ function DriverTabs() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <NavigationContainer>
-        <StatusBar style="dark" />
-        <Root.Navigator screenOptions={{ headerShown: false }}>
-          <Root.Screen name="StudentLogin"  component={StudentLoginScreen} />
-          <Root.Screen name="CreateAccount" component={CreateAccountScreen} />
-          <Root.Screen name="StudentMain"   component={StudentTabs} />
-          <Root.Screen name="StudentHistory" component={HistoryScreen} />
-          <Root.Screen name="DriverLogin"   component={DriverLoginScreen} />
-          <Root.Screen name="DriverMain"    component={DriverTabs} />
-        </Root.Navigator>
-      </NavigationContainer>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <NavigationContainer>
+          <StatusBar style="dark" />
+          <Root.Navigator screenOptions={{ headerShown: false }}>
+            <Root.Screen name="StudentLogin"  component={StudentLoginScreen} />
+            <Root.Screen name="CreateAccount" component={CreateAccountScreen} />
+            <Root.Screen name="StudentMain"   component={StudentTabs} />
+            <Root.Screen name="StudentHistory" component={HistoryScreen} />
+            <Root.Screen name="DriverLogin"   component={DriverLoginScreen} />
+            <Root.Screen name="DriverMain"    component={DriverTabs} />
+          </Root.Navigator>
+        </NavigationContainer>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

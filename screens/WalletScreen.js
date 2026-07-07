@@ -1,9 +1,10 @@
 import React, { useCallback, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  SafeAreaView, ScrollView, Modal, TextInput,
+  ScrollView, Modal, TextInput,
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Linking,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -27,6 +28,7 @@ function extractRedirectUrl(payload) {
 }
 
 function TopUpSheet({ visible, onClose, onConfirm }) {
+  const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState(100);
   const [custom, setCustom] = useState('100');
 
@@ -77,7 +79,7 @@ function TopUpSheet({ visible, onClose, onConfirm }) {
           <Text style={styles.redirectHint}>
             The app will request a payment session, then open the returned payment URL in your browser.
           </Text>
-          <View style={{ height: 20 }} />
+          <View style={{ height: insets.bottom + 20 }} />
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -201,7 +203,7 @@ export default function WalletScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F8FAFC' },
-  scroll: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 40 },
+  scroll: { paddingHorizontal: 24, paddingTop: 30, paddingBottom: 50 },
 
   pageTitle: { fontSize: 28, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5, marginBottom: 20 },
 

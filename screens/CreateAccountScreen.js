@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, SafeAreaView, ScrollView,
+  StyleSheet, ScrollView,
   KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function CreateAccountScreen({ navigation }) {
@@ -113,7 +114,7 @@ export default function CreateAccountScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F8FAFC' },
-  inner: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 24 },
+  inner: { paddingHorizontal: 24, paddingTop: 26, paddingBottom: 34 },
 
   back: { width: 40, height: 40, justifyContent: 'center' },
 

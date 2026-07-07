@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import {
   View, Text, TouchableOpacity, ActivityIndicator,
-  StyleSheet, SafeAreaView, ScrollView, Alert,
+  StyleSheet, ScrollView, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -125,7 +126,7 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.logoutText}> Log Out</Text>
         </TouchableOpacity>
 
-        <View style={{ height: 24 }} />
+        <View style={{ height: 34 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 28, fontWeight: '800', color: '#0F172A',
     letterSpacing: -0.5, paddingHorizontal: 24,
-    paddingTop: 20, paddingBottom: 20,
+    paddingTop: 30, paddingBottom: 20,
   },
 
   profileCard: {
