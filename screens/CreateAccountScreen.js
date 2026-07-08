@@ -1,22 +1,46 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
+  View, Text, TextInput, TouchableOpacity, Image,
   StyleSheet, ScrollView,
   KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function CreateAccountScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm]   = useState('');
   const [showPw, setShowPw]     = useState(false);
   const [showCfm, setShowCfm]   = useState(false);
-  const [uploaded, setUploaded] = useState(false);
+  const [idImage, setIdImage]   = useState(null);
   const [loading, setLoading]   = useState(false);
 
+  const handleCaptureId = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (status !== 'granted') {
+      Alert.alert(
+        'Camera Permission Required',
+        'GoCampus needs camera access to photograph your ID card. Please enable it in your device settings.'
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.6,
+      allowsEditing: true,
+      aspect: [4, 3],
+    });
+
+    if (!result.canceled && result.assets?.length) {
+      setIdImage(result.assets[0]);
+    }
+  };
+
   const handleRegister = () => {
-    if (!uploaded) { Alert.alert('Required', 'Please upload your ID card photo.'); return; }
+    if (!idImage) { Alert.alert('Required', 'Please take a photo of your ID card.'); return; }
     if (!password || password.length < 6) { Alert.alert('Weak Password', 'Minimum 6 characters.'); return; }
     if (password !== confirm) { Alert.alert('Mismatch', 'Passwords do not match.'); return; }
     setLoading(true);
@@ -47,20 +71,23 @@ export default function CreateAccountScreen({ navigation }) {
 
           <Text style={styles.label}>Upload ID Card Photo</Text>
           <TouchableOpacity
-            style={[styles.uploadBox, uploaded && styles.uploadBoxDone]}
-            onPress={() => setUploaded(true)}
+            style={[styles.uploadBox, idImage && styles.uploadBoxDone]}
+            onPress={handleCaptureId}
             activeOpacity={0.8}
           >
-            {uploaded ? (
+            {idImage ? (
               <>
-                <Ionicons name="checkmark-circle" size={40} color="#22C55E" />
-                <Text style={styles.uploadDoneText}>ID Card uploaded</Text>
+                <Image source={{ uri: idImage.uri }} style={styles.uploadPreview} />
+                <View style={styles.uploadDoneRow}>
+                  <Ionicons name="checkmark-circle" size={18} color="#22C55E" />
+                  <Text style={styles.uploadDoneText}> ID Card captured · tap to retake</Text>
+                </View>
               </>
             ) : (
               <>
                 <Ionicons name="camera-outline" size={40} color="#3B82F6" />
-                <Text style={styles.uploadTapText}>Tap to upload ID card</Text>
-                <Text style={styles.uploadHint}>JPG, PNG · Max 5MB</Text>
+                <Text style={styles.uploadTapText}>Tap to take a photo of your ID card</Text>
+                <Text style={styles.uploadHint}>Camera opens directly · JPG</Text>
               </>
             )}
           </TouchableOpacity>

@@ -28,7 +28,8 @@
     },
     "plugins": [
       ["expo-camera", { "cameraPermission": "Allow GoCampus to access your camera.", "barcodeScannerEnabled": true }],
-      ["expo-location", { "locationWhenInUsePermission": "Allow GoCampus to use your location." }]
+      ["expo-location", { "locationWhenInUsePermission": "Allow GoCampus to use your location." }],
+      ["expo-image-picker", { "cameraPermission": "Allow GoCampus to access your camera to photograph your ID card.", "microphonePermission": false }]
     ]
   }
 }
