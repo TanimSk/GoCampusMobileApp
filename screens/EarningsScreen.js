@@ -10,6 +10,30 @@ import { useAuth } from '../context/AuthContext';
 import { getDriverEarnings } from '../api/gocampus';
 import { formatCurrency, formatDateTime } from '../utils/formatters';
 
+function formatStatus(value) {
+  if (!value) {
+    return null;
+  }
+
+  return String(value)
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function DetailRow({ icon, label, value }) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  return (
+    <View style={styles.detailRow}>
+      <Ionicons name={icon} size={13} color="#94A3B8" />
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue}>{value}</Text>
+    </View>
+  );
+}
+
 export default function EarningsScreen() {
   const { session } = useAuth();
   const [earnings, setEarnings] = useState(null);
@@ -53,7 +77,6 @@ export default function EarningsScreen() {
 
   const rides = earnings?.todays_rides || [];
   const todayTotal = Number(earnings?.todays_earnings || 0);
-  const avgPerTrip = rides.length ? Math.round(todayTotal / rides.length) : 0;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -78,8 +101,8 @@ export default function EarningsScreen() {
               <Text style={styles.heroMetaText}> {earnings?.trips_today ?? 0} trips</Text>
             </View>
             <View style={styles.heroMeta}>
-              <Ionicons name="cash-outline" size={13} color="rgba(255,255,255,0.75)" />
-              <Text style={styles.heroMetaText}> Avg ৳{avgPerTrip}/trip</Text>
+              <Ionicons name="car-outline" size={13} color="rgba(255,255,255,0.75)" />
+              <Text style={styles.heroMetaText}> {earnings?.cart_id || 'No cart ID'}</Text>
             </View>
           </View>
         </View>
@@ -118,13 +141,23 @@ export default function EarningsScreen() {
           rides.map((ride, index) => (
             <View key={ride.id || `${ride.created_at}-${index}`} style={styles.rideCard}>
               <View style={styles.rideAvatarBox}>
-                <Ionicons name="person" size={20} color="#22C55E" />
+                <Ionicons name="car" size={20} color="#22C55E" />
               </View>
               <View style={styles.rideInfo}>
-                <Text style={styles.rideId}>{ride.student_id || ride.student_name || 'Student Rider'}</Text>
+                <View style={styles.rideTitleRow}>
+                  <Text style={styles.rideId}>{ride.ecart?.ecart_id_num || earnings?.cart_id || 'Ride'}</Text>
+                  {ride.status ? (
+                    <Text style={styles.statusBadge}>{formatStatus(ride.status)}</Text>
+                  ) : null}
+                </View>
                 <Text style={styles.rideTime}>{formatDateTime(ride.created_at)}</Text>
+                <DetailRow icon="person-outline" label="Driver" value={ride.ecart?.driver_name} />
+                <DetailRow icon="car-outline" label="E-cart ID" value={ride.ecart?.ecart_id_num} />
+                <DetailRow icon="id-card-outline" label="E-cart UUID" value={ride.ecart?.id} />
+                <DetailRow icon="school-outline" label="Student" value={ride.student} />
+                <DetailRow icon="receipt-outline" label="Ride ID" value={ride.id} />
               </View>
-              <Text style={styles.rideAmount}>{formatCurrency(ride.fee)}</Text>
+              <Text style={styles.rideAmount}>{formatCurrency(ride.fare)}</Text>
             </View>
           ))
         )}
@@ -186,7 +219,7 @@ const styles = StyleSheet.create({
   emptyText: { marginTop: 6, fontSize: 13, color: '#64748B', textAlign: 'center' },
 
   rideCard: {
-    flexDirection: 'row', alignItems: 'center',
+    flexDirection: 'row', alignItems: 'flex-start',
     backgroundColor: '#FFF', marginHorizontal: 24, marginBottom: 10,
     borderRadius: 14, padding: 16,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
@@ -197,8 +230,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#DCFCE7',
     justifyContent: 'center', alignItems: 'center', marginRight: 14,
   },
-  rideInfo: { flex: 1 },
+  rideInfo: { flex: 1, gap: 3 },
+  rideTitleRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
   rideId: { fontSize: 15, fontWeight: '700', color: '#0F172A' },
   rideTime: { fontSize: 12, color: '#64748B', marginTop: 3 },
-  rideAmount: { fontSize: 16, fontWeight: '800', color: '#22C55E', letterSpacing: -0.3 },
+  detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 5, marginTop: 2 },
+  detailLabel: { fontSize: 12, color: '#64748B', fontWeight: '700' },
+  detailValue: { flex: 1, fontSize: 12, color: '#94A3B8' },
+  statusBadge: {
+    fontSize: 11, fontWeight: '800', color: '#16A34A',
+    backgroundColor: '#DCFCE7', paddingHorizontal: 8, paddingVertical: 4,
+    borderRadius: 999, overflow: 'hidden',
+  },
+  rideAmount: { fontSize: 16, fontWeight: '800', color: '#22C55E', letterSpacing: -0.3, marginLeft: 10 },
 });

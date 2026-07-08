@@ -20,6 +20,30 @@ function EmptyState({ message }) {
   );
 }
 
+function formatStatus(value) {
+  if (!value) {
+    return null;
+  }
+
+  return String(value)
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function DetailRow({ icon, label, value }) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  return (
+    <View style={styles.detailRow}>
+      <Ionicons name={icon} size={13} color="#94A3B8" />
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue}>{value}</Text>
+    </View>
+  );
+}
+
 export default function HistoryScreen() {
   const { session } = useAuth();
   const isDriver = session?.role === 'ECART';
@@ -144,24 +168,20 @@ export default function HistoryScreen() {
                   <View style={styles.tripLine} />
                 </View>
                 <View style={styles.tripInfo}>
-                  <View style={styles.tripRouteRow}>
-                    <Text style={styles.tripFrom}>{trip.pickup_point || 'Unknown pickup'}</Text>
-                    <Ionicons name="arrow-forward" size={12} color="#94A3B8" style={{ marginHorizontal: 4 }} />
-                    <Text style={styles.tripTo}>{trip.dropoff_point || 'Unknown dropoff'}</Text>
-                  </View>
+                  <Text style={styles.tripTitle}>{trip.ecart?.ecart_id_num || 'Trip'}</Text>
                   <Text style={styles.tripDateTime}>{formatDateTime(trip.created_at)}</Text>
-                  <View style={styles.tripDistRow}>
-                    <Ionicons name="person-outline" size={12} color="#94A3B8" />
-                    <Text style={styles.tripDistance}>
-                      {' '}
-                      {isDriver ? (trip.student_name || trip.student_id || 'Student rider') : (trip.ecart_id_num || 'Campus cart')}
-                    </Text>
-                  </View>
+                  <DetailRow icon="person-outline" label="Driver" value={trip.ecart?.driver_name} />
+                  <DetailRow icon="car-outline" label="E-cart ID" value={trip.ecart?.ecart_id_num} />
+                  <DetailRow icon="id-card-outline" label="E-cart UUID" value={trip.ecart?.id} />
+                  <DetailRow icon="school-outline" label="Student" value={trip.student} />
+                  <DetailRow icon="receipt-outline" label="Trip ID" value={trip.id} />
                 </View>
               </View>
               <View style={styles.tripRight}>
-                <Text style={styles.tripCart}>{isDriver ? (trip.student_id || 'Student') : (trip.ecart_id_num || 'Cart')}</Text>
-                <Text style={styles.tripFare}>{formatCurrency(trip.fee)}</Text>
+                {trip.status ? (
+                  <Text style={styles.statusBadge}>{formatStatus(trip.status)}</Text>
+                ) : null}
+                <Text style={styles.tripFare}>{formatCurrency(trip.fare)}</Text>
               </View>
             </View>
           ))
@@ -219,13 +239,16 @@ const styles = StyleSheet.create({
   },
   tripLine: { width: 2, flex: 1, backgroundColor: '#E2E8F0', marginTop: 4, marginBottom: -8 },
   tripInfo: { flex: 1, gap: 4 },
-  tripRouteRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
-  tripFrom: { fontSize: 14, fontWeight: '700', color: '#0F172A' },
-  tripTo: { fontSize: 14, fontWeight: '700', color: '#0F172A' },
+  tripTitle: { fontSize: 15, fontWeight: '800', color: '#0F172A' },
   tripDateTime: { fontSize: 12, color: '#64748B' },
-  tripDistRow: { flexDirection: 'row', alignItems: 'center' },
-  tripDistance: { fontSize: 12, color: '#94A3B8' },
-  tripRight: { alignItems: 'flex-end', gap: 6, marginLeft: 12 },
-  tripCart: { fontSize: 13, fontWeight: '700', color: '#3B82F6' },
+  detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 5, marginTop: 2 },
+  detailLabel: { fontSize: 12, color: '#64748B', fontWeight: '700' },
+  detailValue: { flex: 1, fontSize: 12, color: '#94A3B8' },
+  tripRight: { alignItems: 'flex-end', gap: 8, marginLeft: 12 },
+  statusBadge: {
+    fontSize: 11, fontWeight: '800', color: '#16A34A',
+    backgroundColor: '#DCFCE7', paddingHorizontal: 8, paddingVertical: 4,
+    borderRadius: 999, overflow: 'hidden',
+  },
   tripFare: { fontSize: 15, fontWeight: '800', color: '#0F172A' },
 });

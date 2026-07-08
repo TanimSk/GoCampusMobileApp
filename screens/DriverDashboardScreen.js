@@ -123,7 +123,13 @@ export default function DriverDashboardScreen({ navigation }) {
         ) : (
           <View style={styles.statsGrid}>
             {cards.map((s) => (
-              <View key={s.id} style={[styles.statCard, s.id === 'occ' && styles.statCardHalf]}>
+              <View
+                key={s.id}
+                style={[
+                  styles.statCard,
+                  s.id === 'earnings' ? styles.statCardFull : styles.statCardHalf,
+                ]}
+              >
                 <View style={[styles.statIconBox, { backgroundColor: s.iconBg }]}>
                   <Ionicons name={s.iconName} size={20} color={s.iconColor} />
                 </View>
@@ -215,12 +221,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24, gap: 12, marginBottom: 28,
   },
   statCard: {
-    flex: 1, minWidth: '44%', backgroundColor: '#FFF',
+    backgroundColor: '#FFF',
     borderRadius: 16, padding: 18,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
-  statCardHalf: { flex: 0, width: '44%' },
+  statCardFull: { width: '100%' },
+  statCardHalf: { flex: 1, minWidth: 0 },
   statIconBox: {
     width: 40, height: 40, borderRadius: 10,
     justifyContent: 'center', alignItems: 'center', marginBottom: 14,

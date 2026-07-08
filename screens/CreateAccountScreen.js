@@ -7,6 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { registerStudent, uploadStudentIdCard } from '../api/gocampus';
 
 export default function CreateAccountScreen({ navigation }) {
   const [password, setPassword] = useState('');
@@ -39,17 +40,31 @@ export default function CreateAccountScreen({ navigation }) {
     }
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
+    if (loading) { return; }
     if (!idImage) { Alert.alert('Required', 'Please take a photo of your ID card.'); return; }
     if (!password || password.length < 6) { Alert.alert('Weak Password', 'Minimum 6 characters.'); return; }
     if (password !== confirm) { Alert.alert('Mismatch', 'Passwords do not match.'); return; }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      const studentIdCardUrl = await uploadStudentIdCard(idImage);
+
+      await registerStudent({
+        studentIdCardUrl,
+        password,
+        confirmPassword: confirm,
+      });
+
       Alert.alert('Success', 'Account created! Please login.', [
         { text: 'OK', onPress: () => navigation.navigate('StudentLogin') },
       ]);
-    }, 1000);
+    } catch (error) {
+      Alert.alert('Registration Failed', error.message || 'Unable to create your account. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -127,6 +142,7 @@ export default function CreateAccountScreen({ navigation }) {
           <TouchableOpacity
             style={[styles.registerBtn, loading && { opacity: 0.7 }]}
             onPress={handleRegister}
+            disabled={loading}
             activeOpacity={0.85}
           >
             <Text style={styles.registerBtnText}>{loading ? 'Creating account…' : 'Register'}</Text>
